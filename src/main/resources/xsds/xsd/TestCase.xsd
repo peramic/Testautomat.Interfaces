@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+XML Schema for the test case files
+Configuration for xsd2code:
+  Collection/CollectionObjectType:     Array
+  Behavior/EnableInitializeFields:     false
+  Serialization/GenerateXmlAttributes: true
+-->
+<xs:schema targetNamespace="http://www.HARTING.com/RFID/TestAutomat"
+           elementFormDefault="qualified"
+           xmlns="http://www.HARTING.com/RFID/TestAutomat"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="testCase" type="TestCaseType" />
+
+  <xs:complexType name="TestCaseType">
+    <xs:sequence>
+      <xs:element name="report" type="TestCaseReportType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            The test automat sets the report data while the test case is processed.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="comment" type="xs:string" minOccurs="0" />
+      <xs:element name="steps" type="StepsType" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TestCaseReportType">
+    <xs:sequence>
+    <xs:element name="parameters" type="ParametersType">
+    </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          The name of the test case
+          The test automat sets the name before the test case is processed.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="parentStepId" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          The unique identifier of the parent step
+          A parent step only exists if the test case is imported in another test case.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="startTime" type="xs:dateTime" use="required" />
+    <xs:attribute name="endTime" type="xs:dateTime">
+      <xs:annotation>
+        <xs:documentation>Intermediate reports does not contain this field</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="StepsType">
+    <xs:sequence>
+      <xs:element name="step" type="StepType" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="StepType">
+    <xs:sequence>
+      <xs:element name="reports" type="StepReportsType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            There can be multiple reports due to thread groups and loops.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="comment" type="xs:string" minOccurs="0" />
+      <xs:choice>
+        <xs:element name="import" type="ImportType">
+          <xs:annotation>
+            <xs:documentation>Imports another test case</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="threads" type="ThreadsType">
+          <xs:annotation>
+            <xs:documentation>
+              Different lists of steps which are processed at the same time (parallel threads)
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="loop" type="LoopType">
+          <xs:annotation>
+            <xs:documentation>A list of steps which are processed in a loop</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="module" type="ModuleType" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>A short name for the step</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="throwExceptions" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation>
+          Breaks the current step list if an exception occurs while processing the step.
+          By default the processing of steps is continued and the exceptions are only reported.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="throwVerificationErrors" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation>
+          Breaks the current step list if a verification error occurs while processing the step.
+          By default the processing of steps is continued and the errors are only reported.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="ImportType">
+    <xs:sequence>
+      <xs:element name="testCaseURI" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            The path to another test case directory
+            A relative directory name starts at the directory of the XML file containing this element.
+            If the resulting directory does not exist then the base directory of all test cases is used
+            for the relative path.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="testCaseParameters" type="ParametersType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            If the imported test case is a template then the parameters are applied to the template.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="StepReportsType">
+    <xs:sequence>
+      <xs:element name="report" type="StepReportType" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="StepReportType">
+    <xs:sequence>
+      <xs:element name="exception" type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            An exception that occurs while importing the test case
+            The exception is serialized to XML by the test automat.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="passNo" type="xs:unsignedInt" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          The pass number
+          In loops and thread groups the same step list is processed more than one time.
+          The pass number clearly marks all report entries of one run.
+          The test automat generates the pass number before a step list is processed.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="stepId" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          The unique identifier of the step
+          The test automat generates the identifier before the step is processed.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="ThreadsType">
+    <xs:sequence>
+      <xs:element name="threadGroup" type="ThreadGroupType" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation>
+            A list of steps which can be processed multiple times at the same time
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ThreadGroupType">
+    <xs:sequence>
+      <xs:element name="steps" type="StepsType" />
+    </xs:sequence>
+    <xs:attribute name="count" type="xs:unsignedInt" default="1">
+      <xs:annotation>
+        <xs:documentation>The count of threads in the group</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="rampUpPeriod" type="xs:unsignedInt" default="0">
+      <xs:annotation>
+        <xs:documentation>
+          The period in milliseconds in which the threads shall be started in constant intervals.
+          Eg. if 3 threads are started in a ramp-up period of 10 seconds then each thread will start
+          5 sec. (ramp-up / (number of threads - 1)) after the previous one.
+          By default all threads are started directly.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="LoopType">
+    <xs:sequence>
+      <xs:element name="steps" type="StepsType" />
+    </xs:sequence>
+    <xs:attribute name="count" type="xs:unsignedInt" default="1">
+      <xs:annotation>
+        <xs:documentation>The count of iterations</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="ModuleType">
+    <xs:sequence>
+      <xs:element name="reports" type="ModuleReportsType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            There can be multiple reports due to thread groups and loops.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="object" type="ObjectType">
+        <xs:annotation>
+          <xs:documentation>The object that is used to process the step.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="verifications" type="VerificationsType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Defines verifications for the XML result of the object.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ModuleReportsType">
+    <xs:sequence>
+      <xs:element name="report" type="ModuleReportType" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ModuleReportType">
+    <xs:sequence>
+      <xs:element name="sourceProperties" type="PropertiesType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Property which were relevant for processing the object (eg. configuration data)
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="result" type="ResultType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            The XML result of the object call
+            An occuring exception is serialized to XML by the test automat.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="verifications" type="ReportVerificationsType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Verification results</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="passNo" type="xs:unsignedInt" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          The pass number
+          In loops and thread groups the same step list is processed more than one time.
+          The pass number clearly marks all report entries of one run.
+          The test automat generates the pass number before a step list is processed.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="startTime" type="xs:dateTime" />
+    <xs:attribute name="endTime" type="xs:dateTime" />
+  </xs:complexType>
+
+  <xs:complexType name="ResultType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="isException" type="xs:boolean" default="false">
+          <xs:annotation>
+            <xs:documentation>Whether the result is a serialized exception or not</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="ObjectType">
+    <xs:sequence>
+      <xs:element name="properties" type="PropertiesType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Properties which are forwarded to the object</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="objectId" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          The identifier of the object that shall be used (see objects.xml files of the modules)
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="PropertiesType">
+    <xs:sequence>
+      <xs:element name="property" type="EntryType" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="EntryType">
+    <xs:choice minOccurs="0">
+      <xs:element name="list" type="ListType" />
+      <xs:element name="dictionary" type="DictionaryType"/>
+    </xs:choice>
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          The value of the entry
+          If this attribute does not exist then a nested "value" element or attribute is required.
+          If the attribute 'globalContextCommunity' is set then this attribute and all nested "value" elements and attributes
+          contain the key for the value in the global context.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="globalContextCommunity" type="xs:string">
+      <xs:annotation>
+        <xs:documentation>
+          The community for the global context
+          If this attribute is set then the attribute "value" or any nested "value" element or attribute
+          contains the key for the value in the context.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="ListType">
+    <xs:choice minOccurs="0">
+      <xs:element name="value" type="xs:string" maxOccurs="unbounded" />
+      <xs:element name="list" type="ListType" maxOccurs="unbounded" />
+      <xs:element name="dictionary" type="DictionaryType" maxOccurs="unbounded" />
+    </xs:choice>
+  </xs:complexType>
+
+  <xs:complexType name="DictionaryType">
+    <xs:sequence>
+      <xs:element name="entry" type="EntryType" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="VerificationsType">
+    <xs:sequence>
+      <xs:element name="verification" type="VerificationType" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="verifyException" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation>True if an occurred exception shall be verified</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="VerificationType">
+    <xs:sequence>
+      <xs:element name="comment" type="xs:string" minOccurs="0" />
+      <xs:element name="actual" type="ActualType" minOccurs="0" />
+      <xs:element name="expected" type="ExpectedType" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          A short name for the verification
+          The result of the verification is reported with this name.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="ActualType">
+    <xs:group ref="ResultFilterGroup" />
+  </xs:complexType>
+
+  <xs:complexType name="ExpectedType">
+    <xs:sequence>
+      <xs:choice>
+        <xs:element name="result" type="xs:string" />
+        <xs:sequence>
+          <xs:element name="resultURI" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>
+                A relative file name starts at the directory of the XML file containing this element.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="resultParameters" type="ParametersType" minOccurs="0">
+            <xs:annotation>
+              <xs:documentation>
+                If the external result is a template then the parameters are applied to the template.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:choice>
+      <xs:group ref="ResultFilterGroup" minOccurs="0" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:group name="ResultFilterGroup">
+    <xs:choice>
+      <xs:element name="resultFilter" type="xs:string" />
+      <xs:sequence>
+        <xs:element name="resultFilterURI" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>
+              A relative file name starts at the directory of the XML file containing this element.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="resultFilterParameters" type="ParametersType" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>
+              If the external filter is a template then the parameters are applied to the template.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:choice>
+  </xs:group>
+
+  <xs:complexType name="ParametersType">
+    <xs:sequence>
+      <xs:element name="parameter" type="EntryType" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ReportVerificationsType">
+    <xs:sequence>
+      <xs:element name="verification" type="ReportVerificationType" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ReportVerificationType">
+    <xs:sequence>
+      <xs:element name="actual" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>The actual result from the object (filtered)</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="expected" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>The expected result from the object (filtered)</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="diff" type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>The first difference between the actual and expected result</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>The verification name used in the definition of the verification</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+</xs:schema>

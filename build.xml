@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<project name="havis.test.suite.api" default="publish" xmlns:ivy="antlib:org.apache.ivy.ant">
+	<!-- Eclipse configuration: Java Build Path -> Source -> src/main/java -> 
+		src/main/resources/classpath -> src/test/java -> Output folder: ./target/test/classes 
+		-> src/test/resources/classpath -> Output folder: ./target/test/classes -> 
+		Allow output folders for source folders -> Default output folder: ./target/classes 
+		-> Libraries -> all havis libs from ./target/lib/ -> all libraries from directory 
+		"lib" TestNG plugin: TestNG -> Output directory: /target/test/reports -->
+	<property file="${basedir}/build.properties" />
+	<property name="basename" value="${ant.project.name}" />
+	<property name="src.dir" location="${basedir}/src/main/java" />
+	<property name="lib.dir" location="${basedir}/lib" />
+	<property name="build.dir" location="${basedir}/target" />
+	<property name="build.dir.classes" location="${build.dir}/classes" />
+	<property name="resources.dir" location="${basedir}/src/main/resources" />
+	<property name="resources.dir.xsds" location="${resources.dir}/xsds" />
+	<property name="resources.dir.classpath" location="${resources.dir}/classpath" />
+	<property file="${resources.dir}/MANIFEST.MF" prefix="manifest" />
+
+	<!--Classpath -->
+	<path id="build.classpath">
+		<fileset dir="${lib.dir}" includes="**/*.jar" />
+	</path>
+
+	<!-- Checks if the build.properties file exists and prints an error message 
+		if the file does not exist -->
+	<target name="check.build.properties">
+		<condition property="ivy.resolver" else="local">
+			<isset property="ivy.resolver" />
+		</condition>
+		<fail message="Missing property 'ivy.url'. Does 'build.properties' file exists?" unless="ivy.url" />
+	</target>
+
+	<target name="clean" description="Cleans the project">
+		<delete dir="${build.dir}" includeemptydirs="true" />
+	</target>
+
+	<target name="clean-cache" description="Cleans the ivy cache">
+		<ivy:cleancache />
+	</target>
+
+	<target name="retrieve" description="">
+		<ivy:retrieve />
+	</target>
+
+	<macrodef name="xjc">
+		<attribute name="name" />
+		<attribute name="package" />
+		<attribute name="catalog" default="" />
+		<element name="bindings" optional="true" implicit="true" />
+		<sequential>
+			<mkdir dir="${build.dir}/jaxb/binding" />
+			<mkdir dir="${build.dir}/jaxb/src" />
+			<taskdef name="xjc2" classname="com.sun.tools.xjc.XJC2Task" classpathref="build.classpath" />
+			<xjc2 schema="${resources.dir}/xsds/xsd/@{name}.xsd" destdir="${build.dir}/jaxb/src" package="@{package}" extension="true">
+				<arg value="-Xinterface" />
+				<arg value="-npa" />
+				<arg value="-verbose" />
+				<bindings />
+			</xjc2>
+		</sequential>
+	</macrodef>
+
+	<!-- Checks if the existing JAXB classes are up to date -->
+	<target name="check.jaxb">
+		<uptodate property="uptodate.jaxb" targetfile="${build.dir}/jaxb/binding/TestCase.xml">
+			<srcfiles dir="${resources.dir}/xsds/xsd" includes="*.xsd" />
+		</uptodate>
+	</target>
+
+	<!-- Creates java classes for XSD files with JAXB. The classes are packaged 
+		to a JAR file. -->
+	<target name="jaxb.TestCase" depends="check.jaxb, retrieve" unless="uptodate.jaxb">
+		<xjc name="TestCase" package="havis.test.suite.testcase">
+			<binding dir="${resources.dir}" includes="binding/TestCase.xml" />
+		</xjc>
+	</target>
+
+	<!-- Compiles the java source files -->
+	<target name="compile" depends="check.build.properties, jaxb.TestCase">
+		<mkdir dir="${build.dir.classes}" />
+		<javac destdir="${build.dir.classes}" debug="${javac.debug}" includeantruntime="false">
+			<src path="${src.dir}" />
+			<src path="${build.dir}/jaxb/src" />
+			<!--Set classpath -->
+			<classpath refid="build.classpath" />
+		</javac>
+	</target>
+
+	<!-- Packages the classes into a JAR file -->
+	<target name="jar" depends="compile" description="Creates a JAR of the Interfaces">
+		<!-- create JAR excl. the config files from classpath -->
+		<jar jarfile="${build.dir}/${basename}.jar" manifest="${resources.dir}/MANIFEST.MF">
+			<fileset dir="${build.dir.classes}" />
+			<fileset dir="${resources.dir.xsds}" />
+			<fileset dir="${resources.dir.classpath}" />
+		</jar>
+	</target>
+
+	<target name="publish" depends="jar" description="Publishes the JAR to the repository">
+		<ivy:resolve file="${resources.dir}/ivy.xml" />
+
+		<ivy:publish resolver="${ivy.resolver}" pubrevision="${manifest.Implementation-Version}" status="integration" overwrite="true">
+			<artifacts pattern="${build.dir}/[artifact].[ext]" />
+		</ivy:publish>
+	</target>
+
+</project>

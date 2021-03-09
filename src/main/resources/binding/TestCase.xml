@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<bindings version="2.1" xmlns="http://java.sun.com/xml/ns/jaxb"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:hi="urn:havis:tools:jaxb:interface"
+	extensionBindingPrefixes="hi">
+
+	<bindings schemaLocation="../xsds/xsd/TestCase.xsd">
+
+		<bindings multiple="true" node="/xs:schema/xs:complexType">
+			<hi:interface>java.io.Serializable</hi:interface>
+		</bindings>
+		
+		
+
+	</bindings>
+</bindings>
